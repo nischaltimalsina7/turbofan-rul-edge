@@ -117,7 +117,7 @@ test_df_scaled_df = pd.DataFrame(
     columns=test_df_dropped.columns
 )
 
-test_df_scaled_df.to_csv('test_FD001_normalized.csv', header=False, index=False)
+test_df_scaled_df.to_csv('data/test_FD001_normalized.csv', header=False, index=False)
 
 
 # In[10]:
@@ -133,7 +133,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 # LOAD
-train_df = pd.read_csv("train_FD001.txt", sep="\s+", engine="python", header=None)
+train_df = pd.read_csv("data/train_FD001.txt", sep="\s+", engine="python", header=None)
 
 # CLEAN
 train_df = train_df.dropna(axis=1)
@@ -190,7 +190,7 @@ test_df[features_to_normalize] = scaler.transform(test_df[features_to_normalize]
 # In[14]:
 
 
-train_df = pd.read_csv('train_FD001.txt', sep="\s+", header=None)
+train_df = pd.read_csv('data/train_FD001.txt', sep="\s+", header=None)
 
 columns = ['engine_number', 'time_in_cycles'] + [f'op_setting_{i}' for i in range(1, 4)] + [f'sensor_{i}' for i in range(1, 22)]
 train_df.columns = columns
@@ -240,9 +240,9 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 # FIX LOADING (critical)
-train_df = pd.read_csv('train_FD001.csv', sep=r'\s+|,', engine='python', header=None)
-test_df = pd.read_csv('test_FD001.csv', sep=r'\s+|,', engine='python', header=None)
-test_rul_df = pd.read_csv('RUL_FD001.csv', header=None)
+train_df = pd.read_csv('data/train_FD001.csv', sep=r'\s+|,', engine='python', header=None)
+test_df = pd.read_csv('data/test_FD001.csv', sep=r'\s+|,', engine='python', header=None)
+test_rul_df = pd.read_csv('data/RUL_FD001.csv', header=None)
 
 # DEFINE COLUMNS (match actual shape)
 if train_df.shape[1] == 26:
@@ -314,7 +314,7 @@ train_df
 # In[20]:
 
 
-train_df.to_csv('train_FD001_complete.csv', header=False, index=False)
+train_df.to_csv('data/train_FD001_complete.csv', header=False, index=False)
 
 
 # In[21]:
@@ -396,9 +396,9 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-train_df = pd.read_csv('train_FD001.csv', sep=r'\s+|,', engine='python', header=None)
-test_df = pd.read_csv('test_FD001.csv', sep=r'\s+|,', engine='python', header=None)
-test_rul_df = pd.read_csv('RUL_FD001.csv', header=None)
+train_df = pd.read_csv('data/train_FD001.csv', sep=r'\s+|,', engine='python', header=None)
+test_df = pd.read_csv('data/test_FD001.csv', sep=r'\s+|,', engine='python', header=None)
+test_rul_df = pd.read_csv('data/RUL_FD001.csv', header=None)
 
 
 if train_df.shape[1] == 26:
@@ -473,8 +473,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-test_df = pd.read_csv('test_FD001.csv', sep=r'\s+|,', engine='python', header=None)
-test_rul_df = pd.read_csv('RUL_FD001.csv', header=None)
+test_df = pd.read_csv('data/test_FD001.csv', sep=r'\s+|,', engine='python', header=None)
+test_rul_df = pd.read_csv('data/RUL_FD001.csv', header=None)
 
 if test_df.shape[1] == 26:
     columns = ['engine_number', 'time_in_cycles'] + \
@@ -529,8 +529,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-test_df = pd.read_csv('test_FD001.csv', sep=r'\s+|,', engine='python', header=None)
-test_rul_df = pd.read_csv('RUL_FD001.csv', header=None)
+test_df = pd.read_csv('data/test_FD001.csv', sep=r'\s+|,', engine='python', header=None)
+test_rul_df = pd.read_csv('data/RUL_FD001.csv', header=None)
 
 columns = ['engine_number', 'time_in_cycles'] + \
           [f'op_setting_{i}' for i in range(1, 4)] + \
@@ -607,9 +607,9 @@ from sklearn.preprocessing import MinMaxScaler
 # ---------------------------
 # LOAD DATA (CRITICAL FIX: whitespace separator)
 # ---------------------------
-train_df = pd.read_csv('train_FD001.csv', sep=r'\s+', header=None)
-test_df = pd.read_csv('test_FD001.csv', sep=r'\s+', header=None)
-test_rul_df = pd.read_csv('RUL_FD001.csv', sep=r'\s+', header=None)
+train_df = pd.read_csv('data/train_FD001.csv', sep=r'\s+', header=None)
+test_df = pd.read_csv('data/test_FD001.csv', sep=r'\s+', header=None)
+test_rul_df = pd.read_csv('data/RUL_FD001.csv', sep=r'\s+', header=None)
 
 # ---------------------------
 # CORRECT COLUMN NAMES (26 columns total)
@@ -707,7 +707,7 @@ y_test_r
 # In[33]:
 
 
-test_df = pd.read_csv('test_FD001.csv', sep=r'\s+', header=None)
+test_df = pd.read_csv('data/test_FD001.csv', sep=r'\s+', header=None)
 
 columns = ['engine_number', 'time_in_cycles'] + \
           [f'op_setting_{i}' for i in range(1, 4)] + \
@@ -724,7 +724,7 @@ max_cycle_test = test_df.groupby('engine_number')['time_in_cycles'].max().reset_
 max_cycle_test.columns = ['engine_number', 'max_time_in_cycles']
 
 # fix RUL file
-test_rul_df = pd.read_csv('RUL_FD001.csv', sep=r'\s+', header=None)
+test_rul_df = pd.read_csv('data/RUL_FD001.csv', sep=r'\s+', header=None)
 
 if test_rul_df.shape[1] > 1:
     test_rul_df = test_rul_df.iloc[:, 0]
@@ -800,9 +800,9 @@ from sklearn.preprocessing import MinMaxScaler
 # ---------------------------
 # LOAD DATA (correct parsing)
 # ---------------------------
-train_df = pd.read_csv('train_FD001.csv', sep=r'\s+', header=None)
-test_df = pd.read_csv('test_FD001.csv', sep=r'\s+', header=None)
-test_rul_df = pd.read_csv('RUL_FD001.csv', sep=r'\s+', header=None)
+train_df = pd.read_csv('data/train_FD001.csv', sep=r'\s+', header=None)
+test_df = pd.read_csv('data/test_FD001.csv', sep=r'\s+', header=None)
+test_rul_df = pd.read_csv('data/RUL_FD001.csv', sep=r'\s+', header=None)
 
 # ---------------------------
 # SET CORRECT COLUMNS (26)
@@ -938,7 +938,7 @@ from sklearn.model_selection import train_test_split
 # =========================
 # LOAD DATA (CRITICAL)
 # =========================
-train_df = pd.read_csv('train_FD001.csv', sep=r'\s+', header=None)
+train_df = pd.read_csv('data/train_FD001.csv', sep=r'\s+', header=None)
 
 # =========================
 # SET COLUMNS
