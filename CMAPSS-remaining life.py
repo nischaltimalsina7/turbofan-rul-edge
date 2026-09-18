@@ -7,9 +7,9 @@
 import pandas as pd
 
 # load dataset from local folder
-train_df = pd.read_csv("train_FD001.txt", sep=r"\s+", header=None)
-test_df = pd.read_csv("test_FD001.txt", sep=r"\s+", header=None)
-test_rul_df = pd.read_csv("RUL_FD001.txt", header=None)
+train_df = pd.read_csv("data/train_FD001.txt", sep=r"\s+", header=None)
+test_df = pd.read_csv("data/test_FD001.txt", sep=r"\s+", header=None)
+test_rul_df = pd.read_csv("data/RUL_FD001.txt", header=None)
 
 # correct column names
 columns = ['engine_number','time_in_cycles'] \
@@ -54,9 +54,9 @@ train_df
 # In[6]:
 
 
-test_data = pd.read_csv("test_FD001.txt", sep = "\s+", header = None)
-true_rul = pd.read_csv("RUL_FD001.txt", sep = '\s+', header = None)
-train_data = pd.read_csv("train_FD001.txt", sep = "\s+", header = None)
+test_data = pd.read_csv("data/test_FD001.txt", sep = "\s+", header = None)
+true_rul = pd.read_csv("data/RUL_FD001.txt", sep = '\s+', header = None)
+train_data = pd.read_csv("data/train_FD001.txt", sep = "\s+", header = None)
 
 
 
@@ -68,8 +68,8 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
 # LOAD DATA
-test_df = pd.read_csv("test_FD001.txt", sep="\s+", engine="python", header=None)
-train_df = pd.read_csv("train_FD001.txt", sep="\s+", engine="python", header=None)
+test_df = pd.read_csv("data/test_FD001.txt", sep="\s+", engine="python", header=None)
+train_df = pd.read_csv("data/train_FD001.txt", sep="\s+", engine="python", header=None)
 
 # REMOVE EMPTY COLUMNS
 test_df = test_df.dropna(axis=1)
