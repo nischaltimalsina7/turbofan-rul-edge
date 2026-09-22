@@ -54,9 +54,9 @@ train_df
 # In[6]:
 
 
-test_data = pd.read_csv("data/test_FD001.txt", sep = "\s+", header = None)
-true_rul = pd.read_csv("data/RUL_FD001.txt", sep = '\s+', header = None)
-train_data = pd.read_csv("data/train_FD001.txt", sep = "\s+", header = None)
+test_data = pd.read_csv("data/test_FD001.txt", sep =r"\s+", header = None)
+true_rul = pd.read_csv("data/RUL_FD001.txt", sep = r"\s+", header = None)
+train_data = pd.read_csv("data/train_FD001.txt", sep = r"\s+", header = None)
 
 
 
@@ -68,8 +68,8 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
 # LOAD DATA
-test_df = pd.read_csv("data/test_FD001.txt", sep="\s+", engine="python", header=None)
-train_df = pd.read_csv("data/train_FD001.txt", sep="\s+", engine="python", header=None)
+test_df = pd.read_csv("data/test_FD001.txt", sep=r"\s+", engine="python", header=None)
+train_df = pd.read_csv("data/train_FD001.txt", sep=r"\s+", engine="python", header=None)
 
 # REMOVE EMPTY COLUMNS
 test_df = test_df.dropna(axis=1)
@@ -133,8 +133,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 # LOAD
-train_df = pd.read_csv("data/train_FD001.txt", sep="\s+", engine="python", header=None)
-
+train_df = pd.read_csv("data/train_FD001.txt", sep=r"\s+", engine="python", header=None)
 # CLEAN
 train_df = train_df.dropna(axis=1)
 
@@ -190,7 +189,7 @@ test_df[features_to_normalize] = scaler.transform(test_df[features_to_normalize]
 # In[14]:
 
 
-train_df = pd.read_csv('data/train_FD001.txt', sep="\s+", header=None)
+train_df = pd.read_csv("data/train_FD001.txt", sep=r"\s+", header=None)
 
 columns = ['engine_number', 'time_in_cycles'] + [f'op_setting_{i}' for i in range(1, 4)] + [f'sensor_{i}' for i in range(1, 22)]
 train_df.columns = columns
