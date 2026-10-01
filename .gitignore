@@ -1,4 +1,9 @@
-data/*.txt
+data/*
+!data/.gitkeep
+models/*
+!models/preprocess_spec.json
+!models/.gitkeep
+outputs/
 dataset/
 *.zip
 __pycache__/

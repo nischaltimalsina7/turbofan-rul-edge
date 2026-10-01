@@ -54,9 +54,9 @@ train_df
 # In[6]:
 
 
-test_data = pd.read_csv("test_FD001.txt", sep=r"\s+", header = None)
-true_rul = pd.read_csv("RUL_FD001.txt", sep = r"\s+", header = None)
-train_data = pd.read_csv("train_FD001.txt", sep = r"\s+", header = None)
+test_data = pd.read_csv("test_FD001.txt", sep=r"\s+", header=None)
+true_rul = pd.read_csv("RUL_FD001.txt", sep=r"\s+", header=None)
+train_data = pd.read_csv("train_FD001.txt", sep=r"\s+", header=None)
 
 
 
