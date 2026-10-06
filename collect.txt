@@ -1,0 +1,73 @@
+WHAT TO RUN, WHAT TO COLLECT, WHERE TO STORE IT  (weeks 6-8)
+==============================================================
+
+These files are ADDED to the repo you already have. They do not replace your
+edge/cloud code. Analysis comes later; this is only about producing complete,
+trustworthy raw data. Nothing here has run on dripek-ws yet: week 6 is
+about getting it running there and proving the testbed (preflight), week 7
+is the pilot.
+
+FILES ADDED
+-----------
+
+  File | Put it at | What it does
+  ------------------------------------------------------------
+  doe_cells.csv / doe_cells.xlsx | docs/ | The experiment: 77 cells, one row each, with the edge profile (small = container edge, 1 CPU/1 GiB; medium = edge2, 2 CPU/2 GiB), the exact netem commands and the run order. The xlsx has extra columns you fill in after each cell.
+  preflight.sh | net/ | Week-6 checks: image builds, rootless network, the 1 CPU/1 GiB and 2 CPU/2 GiB caps really apply, netem accepted, ping shows the injected RTT. Set IMAGE=<your image name>. Run inside srun.
+  netem.sh | net/ | net/netem.sh <rtt_ms> <bw> applies one network condition to edge, edge2 and cloud via podman exec; clear, show. Containers must run with --cap-add NET_ADMIN.
+  run_sweep.sh | src/ | Executes docs/doe_cells.csv row by row (pilot, pilot2 or full), in the edge container the row names. One line to adapt: the client() function must call YOUR edge client. DRY_RUN=1 prints the commands without running.
+  rep_probe.sh | src/ | Called by run_sweep.sh before and after every replication; records host load and the edge container's cgroup CPU counters to results/rep_probe.csv. No changes needed.
+  sweep.sbatch | slurm/ | Runs the whole thing under one Slurm allocation (8 CPUs, 16 GB): starts cloud, edge, edge2, proves caps and ping, runs the table. Adapt the image name and server command.
+
+YOUR EDGE CLIENT MUST WRITE, PER INFERENCE, TO RESULTS/RUNS.CSV
+---------------------------------------------------------------
+
+One row per engine per replication. Column names exactly as below (the analysis
+is written against them).
+
+  Column | Meaning
+  ------------------------------------------------------------
+  run_id | from --run-id (identifies one sweep)
+  config | cloud / hybrid / edge
+  rtt_ms, bw, precision, edge_profile, rep | the cell keys, copied from the arguments (--edge-profile small | medium is passed by run_sweep.sh)
+  engine | test engine id (1–100)
+  true_rul, pred_rul | ground truth from RUL_FD001.txt; the served prediction
+  total_ns | wall time from "window ready" to "prediction received", time.perf_counter_ns()
+  edge_ns | edge-side preprocessing (+ inference for edge-only)
+  server_ns | server compute, as reported by the server in its response (0 for edge-only)
+  network_ns | total_ns - edge_ns - server_ns
+  bytes_out, bytes_in | request body length; response body length (0 / 0 for edge-only)
+  ts_utc | timestamp
+
+Rules: 3 untimed warm-up requests before each pass; append, never overwrite;
+never edit the file by hand.
+
+WRITTEN AUTOMATICALLY (DO NOT EDIT)
+-----------------------------------
+
+results/rep_probe.csv — one start row and one end row per replication:
+edge profile and container, timestamp, host load (1 and 5 min), that
+container's cpu.stat counters (usage_usec, nr_periods, nr_throttled,
+throttled_usec), cpu.max (100000/100000 small, 200000/100000 medium),
+memory.peak, and how many other users had Slurm jobs running.
+results/meta_<run_id>.txt — git commit, dirty flag, table checksum, Podman
+version, image id, Slurm job, load at start and end, caps of both edge containers.
+results/netem_log_<run_id>.txt — tc qdisc show after every netem change.
+
+STORE
+-----
+
+After a sweep: git add results/runs.csv results/rep_probe.csv results/meta_*.txt results/netem_log_*.txt,
+commit with the run_id in the message, and tag (pilot-v1, sweep-v1).
+Do not commit data files or model weights. One sweep at a time: squeue -u $USER
+and podman ps first. If anything else was running during a cell, note it in
+the xlsx and re-run that cell.
+
+POST ON TEAMS (FRIDAY)
+----------------------
+
+Week 6: podman images + the existing run's output from the workstation; the
+full preflight.sh output; DRY_RUN=1 bash src/run_sweep.sh pilot output;
+commit links.
+Week 7: ping cloud output showing the RTT; commit hash and tag of the pilot
+results; number of rows in runs.csv; the xlsx rows filled in.
