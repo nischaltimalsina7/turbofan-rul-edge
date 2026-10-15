@@ -1,5 +1,7 @@
 FROM docker.io/library/python:3.13-slim
 
+RUN apt-get update && apt-get install -y --no-install-recommends iproute2 iputils-ping && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONUNBUFFERED=1
 ENV MPLBACKEND=Agg
 
