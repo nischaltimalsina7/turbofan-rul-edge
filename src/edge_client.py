@@ -1,6 +1,8 @@
 
 import argparse
+import atexit
 import csv
+import http.client
 import json
 import os
 import time
@@ -9,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
+import tensorflow as tf
 
 from src.preprocessing import load_spec, preprocess_window
 
@@ -42,24 +45,70 @@ def load_engines(limit):
     return engines
 
 
-def send_prediction(window, server_url):
+def send_prediction(window, connection):
     payload = json.dumps(
         {"window": window.tolist()}
     ).encode("utf-8")
 
-    request = urllib.request.Request(
-        server_url.rstrip("/") + "/predict",
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST"
+    connection.request(
+        "POST",
+        "/predict",
+        body=payload,
+        headers={"Content-Type": "application/json"}
     )
 
-    with urllib.request.urlopen(request, timeout=60) as response:
-        body = response.read()
+    response = connection.getresponse()
+    body = response.read()
+
+    if response.status != 200:
+        raise RuntimeError(
+            f"Cloud HTTP {response.status}: {body.decode('utf-8')}"
+        )
 
     result = json.loads(body.decode("utf-8"))
     return result, len(payload), len(body)
 
+
+
+def load_int8_interpreter():
+    interpreter = tf.lite.Interpreter(
+        model_path="/app/models/model_int8.tflite"
+    )
+    interpreter.allocate_tensors()
+
+    input_info = interpreter.get_input_details()[0]
+    output_info = interpreter.get_output_details()[0]
+
+    if input_info["dtype"] != np.int8:
+        raise ValueError("Expected INT8 model input")
+    if output_info["dtype"] != np.int8:
+        raise ValueError("Expected INT8 model output")
+
+    return interpreter, input_info, output_info
+
+
+def predict_int8(window, interpreter, input_info, output_info):
+    x = np.asarray(window, dtype=np.float32)[np.newaxis, ...]
+
+    scale, zero = input_info["quantization"]
+    output_scale, output_zero = output_info["quantization"]
+
+    if scale <= 0 or output_scale <= 0:
+        raise ValueError("Invalid INT8 quantization parameters")
+
+    quantized = np.clip(
+        np.round(x / scale + zero), -128, 127
+    ).astype(np.int8)
+
+    interpreter.set_tensor(input_info["index"], quantized)
+    interpreter.invoke()
+
+    raw_prediction = interpreter.get_tensor(output_info["index"])
+    prediction = (
+        int(raw_prediction.reshape(-1)[0]) - output_zero
+    ) * output_scale
+
+    return float(prediction)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -79,16 +128,26 @@ def main():
     args = parser.parse_args()
 
     if args.config == "edge":
-        raise NotImplementedError(
-            "Edge-only INT8 inference is not implemented yet."
-        )
-
-    if args.precision not in ("float32", "float16"):
+        if args.precision != "int8":
+            raise ValueError("Edge-only requires --precision int8")
+        interpreter, input_info, output_info = load_int8_interpreter()
+    elif args.precision not in ("float32", "float16"):
         raise ValueError("Unsupported precision")
 
     server_url = os.environ.get(
         "SERVER_URL", "http://cloud:8000"
     )
+
+    server_address = server_url.removeprefix("http://")
+    if "/" in server_address:
+        server_address = server_address.split("/", 1)[0]
+
+    host, port = server_address.rsplit(":", 1)
+    connection = http.client.HTTPConnection(
+        host, int(port), timeout=60
+    ) if args.config != "edge" else None
+    if connection is not None:
+        atexit.register(connection.close)
 
     engines = load_engines(args.limit)
     spec = load_spec()
@@ -104,7 +163,11 @@ def main():
             warmup_window = warmup_window.astype(np.float16)
 
     for _ in range(3):
-        send_prediction(warmup_window, server_url)
+        if args.config == "edge":
+            prepared = preprocess_window(warmup_window, spec)
+            predict_int8(prepared, interpreter, input_info, output_info)
+        else:
+            send_prediction(warmup_window, connection)
 
     file_exists = (
         results_path.exists() and results_path.stat().st_size > 0
@@ -131,15 +194,29 @@ def main():
             else:
                 window = raw_window
 
-            result, bytes_out, bytes_in = send_prediction(
-                window, server_url
-            )
+            if args.config == "edge":
+                edge_start = time.perf_counter_ns()
+                prepared = preprocess_window(raw_window, spec)
+                pred_rul = predict_int8(
+                    prepared, interpreter, input_info, output_info
+                )
+                edge_ns = time.perf_counter_ns() - edge_start
+                server_ns = 0
+                network_ns = 0
+                bytes_out = 0
+                bytes_in = 0
+            else:
+                result, bytes_out, bytes_in = send_prediction(
+                    window, connection
+                )
+                server_ns = int(result["server_ns"])
+                pred_rul = float(result["pred_rul"])
 
             total_ns = time.perf_counter_ns() - total_start
-            server_ns = int(result["server_ns"])
-            network_ns = max(
-                0, total_ns - edge_ns - server_ns
-            )
+            if args.config != "edge":
+                network_ns = max(
+                    0, total_ns - edge_ns - server_ns
+                )
 
             writer.writerow({
                 "run_id": args.run_id,
@@ -151,7 +228,7 @@ def main():
                 "rep": args.rep,
                 "engine": engine_id,
                 "true_rul": true_rul,
-                "pred_rul": float(result["pred_rul"]),
+                "pred_rul": pred_rul,
                 "total_ns": total_ns,
                 "edge_ns": edge_ns,
                 "server_ns": server_ns,
@@ -166,7 +243,7 @@ def main():
             print(
                 f"Engine {engine_id}: "
                 f"true={true_rul:.1f}, "
-                f"pred={float(result['pred_rul']):.2f}, "
+                f"pred={pred_rul:.2f}, "
                 f"total={total_ns / 1e6:.2f} ms"
             )
 

@@ -39,11 +39,18 @@ podman run -d --name cloud --network "$NET" --cap-add NET_ADMIN \
 # Both mount the same results/ so runs.csv is one file.
 for spec in "edge 1 1g small" "edge2 2 2g medium"; do
   set -- $spec
+  # CPU affinity workaround: restrict each container to its assigned CPU set.
+  # This is not equivalent to a cgroup CPU quota.
+  if [[ "$1" == "edge" ]]; then
+    CPUSET="0,16"
+  else
+    CPUSET="0,1,16,17"
+  fi
   podman run -d --name "$1" --network "$NET" --cap-add NET_ADMIN \
-    --cpus "$2" --memory "$3" \
+    --memory "$3" \
     -e SERVER_URL=http://cloud:8000 -e EDGE_PROFILE="$4" \
     -v "$PWD/data:/app/data:ro" -v "$PWD/models:/app/models:ro" -v "$PWD/results:/app/results" \
-    "$IMG" sleep infinity
+    "$IMG" taskset -c "$CPUSET" sleep infinity
 done
 
 # Wait for the server, then prove the caps and the link before measuring anything.

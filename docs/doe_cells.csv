@@ -1,6 +1,6 @@
 cell_id,placement,rtt_ms,bw,precision,edge_profile,edge_container,edge_cpus,edge_mem,served_model,reps,engines_per_rep,n_measurements,payload_bytes_nominal,netem_edge,netem_cloud,pilot,run_order,order_seed
-C01,edge,0,none,float32,small,edge,1,1g,INT8 dynamic-quantized reused model (edge container),5,100,500,0,none,none,False,0,2026
-C02,edge,0,none,float32,medium,edge2,2,2g,INT8 dynamic-quantized reused model (edge container),5,100,500,0,none,none,False,0,2026
+C01,edge,0,none,int8,small,edge,1,1g,INT8 dynamic-quantized reused model (edge container),5,100,500,0,none,none,False,0,2026
+C02,edge,0,none,int8,medium,edge2,2,2g,INT8 dynamic-quantized reused model (edge container),5,100,500,0,none,none,False,0,2026
 C62,hybrid,50,10mbit,float32,medium,edge2,2,2g,FP32 reused model (cloud container),5,100,500,2160,tc qdisc replace dev eth0 root netem delay 25ms limit 10000 rate 10mbit,tc qdisc replace dev eth0 root netem delay 25ms limit 10000,False,1,2026
 C49,hybrid,0,unlimited,float16,medium,edge2,2,2g,FP32 reused model (cloud container),5,100,500,1080,tc qdisc del dev eth0 root,tc qdisc del dev eth0 root,False,2,2026
 C56,hybrid,20,10mbit,float32,medium,edge2,2,2g,FP32 reused model (cloud container),5,100,500,2160,tc qdisc replace dev eth0 root netem delay 10ms limit 10000 rate 10mbit,tc qdisc replace dev eth0 root netem delay 10ms limit 10000,False,3,2026

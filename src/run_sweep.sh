@@ -26,7 +26,15 @@ run() { if [[ "${DRY_RUN:-0}" == "1" ]]; then echo "+ $*"; else "$@"; fi; }
 #                 --edge-profile small|medium  --rep N  --run-id ID  [--limit N]
 # and append one row per inference to results/runs.csv (columns: see collect.txt).
 # $EDGE is the container for this cell's edge profile (edge = 1 CPU/1 GiB, edge2 = 2 CPU/2 GiB).
-client() { run podman exec -e RUN_ID="$RUN_ID" "$EDGE" python -m src.edge_client "$@"; }
+client() {
+  local CPUSET
+  if [[ "$EDGE" == "edge" ]]; then
+    CPUSET="0,16"
+  else
+    CPUSET="0,1,16,17"
+  fi
+  run podman exec -e RUN_ID="$RUN_ID" "$EDGE" taskset -c "$CPUSET" python -m src.edge_client "$@"
+}
 probe()  { run "$HERE/src/rep_probe.sh" "$@"; }   # machine-state snapshot, see rep_probe.sh
 
 # Provenance: without this block no number is reproducible.
@@ -37,7 +45,7 @@ if [[ "${DRY_RUN:-0}" != "1" ]]; then {
   echo "table_sha256=$(sha256sum "$TABLE" | cut -c1-16)"
   echo "git_commit=$(git -C "$HERE" rev-parse HEAD 2>/dev/null || echo untracked)"
   echo "git_dirty=$(git -C "$HERE" status --porcelain 2>/dev/null | wc -l)"
-  echo "podman=$(podman --version)"; echo "image=$(podman inspect -f '{{.ImageName}} {{.Image}}' "$EDGE")"
+  echo "podman=$(podman --version)"; echo "image=$(podman inspect -f '{{.ImageName}} {{.Image}}' edge)"
   echo "slurm_job=${SLURM_JOB_ID:-none} cpus=${SLURM_CPUS_PER_TASK:-?} mem=${SLURM_MEM_PER_NODE:-?}"
   echo "load_at_start=$(cut -d' ' -f1-3 /proc/loadavg)"
   for c in ${EDGE_CONTAINERS:-edge edge2}; do
@@ -67,9 +75,9 @@ EOF
   if [[ "$PLACE" == "edge" ]]; then
     run "$HERE/net/netem.sh" clear
     for rep in $(seq 0 $((REPS-1))); do
-      probe start "$CELL" edge 0 none "$PREC" "$PROF" "$EDGE" "$rep"
-      client --config edge --edge-profile "$PROF" --rep "$rep" --run-id "$RUN_ID" "${LIMIT[@]}"
-      probe end   "$CELL" edge 0 none "$PREC" "$PROF" "$EDGE" "$rep"
+      probe start "$CELL" edge 0 none int8 "$PROF" "$EDGE" "$rep"
+      client --config edge --rtt-ms 0 --bw none --precision int8 --edge-profile "$PROF" --rep "$rep" --run-id "$RUN_ID" "${LIMIT[@]}"
+      probe end   "$CELL" edge 0 none int8 "$PROF" "$EDGE" "$rep"
     done
   else
     run "$HERE/net/netem.sh" "$RTT" "$BW"

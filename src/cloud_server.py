@@ -13,6 +13,7 @@ MODEL = load_model(MODEL_PATH, compile=False)
 
 
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
     def send_json(self, status, payload):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
