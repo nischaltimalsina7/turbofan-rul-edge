@@ -1130,6 +1130,11 @@ model.compile(optimizer=RMSprop(learning_rate=0.001), loss='mean_squared_error',
 
 
 early_stopping = EarlyStopping(monitor='val_loss', patience=10)
-model_checkpoint = ModelCheckpoint('best_model.h5', monitor='val_loss')
+
+model_checkpoint = ModelCheckpoint(
+    '/app/models/best_model.keras',
+    monitor='val_loss',
+    save_best_only=True
+)
 
 history = model.fit(processed_train_data, processed_train_targets, validation_data=(processed_val_data, processed_val_targets), epochs=100, batch_size=200, callbacks=[early_stopping, model_checkpoint])
