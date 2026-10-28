@@ -16,7 +16,7 @@ MODE=${1:-pilot}
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 TABLE="$HERE/docs/doe_cells.csv"
 export RUN_ID=${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_${MODE}}
-[[ "$MODE" == "pilot" || "$MODE" == "pilot2" || "$MODE" == "full" ]] || { echo "mode must be pilot|pilot2|full"; exit 2; }
+[[ "$MODE" == "pilot" || "$MODE" == "pilot2" || "$MODE" == "preflight" || "$MODE" == "full" ]] || { echo "mode must be pilot|pilot2|preflight|full"; exit 2; }
 [[ -f "$TABLE" ]] || { echo "missing $TABLE — run: python src/make_doe.py"; exit 2; }
 
 run() { if [[ "${DRY_RUN:-0}" == "1" ]]; then echo "+ $*"; else "$@"; fi; }
@@ -62,7 +62,10 @@ for r in sorted(csv.DictReader(open(sys.argv[1])), key=lambda r: int(r["run_orde
     print(r["cell_id"], r["placement"], r["rtt_ms"], r["bw"], r["precision"],
           r["edge_profile"], r["edge_container"], r["reps"], r["engines_per_rep"], r["pilot"])
 EOF
-  if [[ "$MODE" == "pilot" ]]; then
+  if [[ "$MODE" == "preflight" ]]; then
+    [[ "$CELL" == "C35" ]] || continue
+    REPS=1; LIMIT=(--limit 20)
+  elif [[ "$MODE" == "pilot" ]]; then
     [[ "$PILOT" == "True" ]] || continue
     REPS=1; LIMIT=(--limit 20)
   elif [[ "$MODE" == "pilot2" ]]; then
