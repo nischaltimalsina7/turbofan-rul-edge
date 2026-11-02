@@ -39,18 +39,11 @@ podman run -d --name cloud --network "$NET" --cap-add NET_ADMIN \
 # Both mount the same results/ so runs.csv is one file.
 for spec in "edge 1 1g small" "edge2 2 2g medium"; do
   set -- $spec
-  # CPU affinity workaround: restrict each container to its assigned CPU set.
-  # This is not equivalent to a cgroup CPU quota.
-  if [[ "$1" == "edge" ]]; then
-    CPUSET="0,16"
-  else
-    CPUSET="0,1,16,17"
-  fi
   podman run -d --name "$1" --network "$NET" --cap-add NET_ADMIN \
-    --memory "$3" \
+    --cpus "$2" --memory "$3" \
     -e SERVER_URL=http://cloud:8000 -e EDGE_PROFILE="$4" \
     -v "$PWD/data:/app/data:ro" -v "$PWD/models:/app/models:ro" -v "$PWD/results:/app/results" \
-    "$IMG" taskset -c "$CPUSET" sleep infinity
+    "$IMG" sleep infinity
 done
 
 # Wait for the server, then prove the caps and the link before measuring anything.
@@ -62,5 +55,21 @@ for c in edge edge2; do
   echo "$c cpu.max=$(podman exec $c cat /sys/fs/cgroup/cpu.max) memory.max=$(podman exec $c cat /sys/fs/cgroup/memory.max)"
 done
 net/netem.sh 50 unlimited && podman exec edge ping -c 3 cloud | tail -1 && podman exec edge2 ping -c 3 cloud | tail -1 && net/netem.sh clear
+
+# Refuse to measure if the required cgroup limits are not enforced.
+for spec in "edge 100000 1073741824" "edge2 200000 2147483648"; do
+  read -r name quota memory <<< "$spec"
+  cpu_max=$(podman exec "$name" cat /sys/fs/cgroup/cpu.max)
+  mem_max=$(podman exec "$name" cat /sys/fs/cgroup/memory.max)
+  [[ "$cpu_max" == "$quota 100000" ]] || {
+    echo "ERROR: $name CPU quota incorrect: $cpu_max"
+    exit 1
+  }
+  [[ "$mem_max" == "$memory" ]] || {
+    echo "ERROR: $name memory limit incorrect: $mem_max"
+    exit 1
+  }
+done
+echo "CPU and memory limits verified."
 
 bash src/run_sweep.sh "$MODE"   # executes docs/doe_cells.csv

@@ -16,7 +16,7 @@ MODE=${1:-pilot}
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 TABLE="$HERE/docs/doe_cells.csv"
 export RUN_ID=${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)_${MODE}}
-[[ "$MODE" == "pilot" || "$MODE" == "pilot2" || "$MODE" == "preflight" || "$MODE" == "full" ]] || { echo "mode must be pilot|pilot2|preflight|full"; exit 2; }
+[[ "$MODE" == "pilot" || "$MODE" == "pilot2" || "$MODE" == "preflight" || "$MODE" == "full" || "$MODE" == "c01" ]] || { echo "mode must be pilot|pilot2|preflight|full"; exit 2; }
 [[ -f "$TABLE" ]] || { echo "missing $TABLE — run: python src/make_doe.py"; exit 2; }
 
 run() { if [[ "${DRY_RUN:-0}" == "1" ]]; then echo "+ $*"; else "$@"; fi; }
@@ -27,13 +27,7 @@ run() { if [[ "${DRY_RUN:-0}" == "1" ]]; then echo "+ $*"; else "$@"; fi; }
 # and append one row per inference to results/runs.csv (columns: see collect.txt).
 # $EDGE is the container for this cell's edge profile (edge = 1 CPU/1 GiB, edge2 = 2 CPU/2 GiB).
 client() {
-  local CPUSET
-  if [[ "$EDGE" == "edge" ]]; then
-    CPUSET="0,16"
-  else
-    CPUSET="0,1,16,17"
-  fi
-  run podman exec -e RUN_ID="$RUN_ID" "$EDGE" taskset -c "$CPUSET" python -m src.edge_client "$@"
+  run podman exec -e RUN_ID="$RUN_ID" "$EDGE" python -m src.edge_client "$@"
 }
 probe()  { run "$HERE/src/rep_probe.sh" "$@"; }   # machine-state snapshot, see rep_probe.sh
 
@@ -62,7 +56,10 @@ for r in sorted(csv.DictReader(open(sys.argv[1])), key=lambda r: int(r["run_orde
     print(r["cell_id"], r["placement"], r["rtt_ms"], r["bw"], r["precision"],
           r["edge_profile"], r["edge_container"], r["reps"], r["engines_per_rep"], r["pilot"])
 EOF
-  if [[ "$MODE" == "preflight" ]]; then
+  if [[ "$MODE" == "c01" ]]; then
+    [[ "$CELL" == "C01" ]] || continue
+    LIMIT=()
+  elif [[ "$MODE" == "preflight" ]]; then
     [[ "$CELL" == "C35" ]] || continue
     REPS=1; LIMIT=(--limit 20)
   elif [[ "$MODE" == "pilot" ]]; then
